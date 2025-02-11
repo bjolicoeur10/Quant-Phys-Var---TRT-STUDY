@@ -1,0 +1,116 @@
+function getgating(ppg_name, ppg_trig_name, gating_name, new_file_name,tick)
+    format long
+    r = load_gating(gating_name);
+    g_tr = 7688e-6 - 3e-6;
+    disdaq_time = 1;
+    effective_tr = 4 * g_tr;
+    pr_disdaqs = 1 + round(disdaq_time / effective_tr);
+    ppg_dt = 10e-3;
+    ppg_vals = textread(ppg_name);
+    ppg_time = (0:numel(ppg_vals) - 1) * ppg_dt - 30 - pr_disdaqs * effective_tr;
+    ppg_trigger = textread(ppg_trig_name);
+    
+    if 
+    
+    
+    
+    
+    if ppg_trigger(1) == 0
+        ppg_trigger(1) = 1;
+        'corrected zero val at'
+    end
+    
+    ppgtt = ppg_time(ppg_trigger);
+
+    for i = 1:numel(ppgtt)
+        tradjco = 0.01;
+        tradj = i * 0.00043;
+        ppgtt(i) = ppgtt(i) + tradj + tradjco;
+    end
+    slope = 1000;
+
+    stop_time = max(r.time);
+    desired_length = numel(r.time);
+    time_step = stop_time / (desired_length - 1);
+    ecg_array_time = linspace(0, stop_time, desired_length);
+    ecg_array = zeros(1, desired_length);
+    current_time = 0;
+    current_value = 655 - 18.689; % a non-zero start time
+    reset_flag = false;
+
+    for t = 1:numel(ecg_array)
+        current_value = current_value + slope * time_step;
+        current_time = current_time + time_step;
+
+        if any(abs(current_time - ppgtt) < time_step)
+            if ~reset_flag
+                current_value = 0;
+                reset_flag = true;
+            end
+        else
+            reset_flag = false;
+        end
+
+        ecg_array(t) = current_value;
+
+        if current_time >= stop_time
+            break;
+        end
+    end
+    ecg_array = ecg_array + 203;
+
+    % Plotting (optional)
+%     figure
+%     hold on
+%     plot(r.time, ecg_array)
+%     plot(r.time, r.ecg)
+%     plot(ppg_time(ppg_trigger), ppg_vals(ppg_trigger), '*')
+%     xlim([0 340])
+
+    d1 = ecg_array;
+    d2 = 4095 - r.resp;
+    d3 = r.time * 1e6;
+    d4 = r.prep;
+    d5 = r.acq;
+
+    fid = fopen(new_file_name, 'w');
+    fwrite(fid, d1, 'int32', 'b');
+    fwrite(fid, d2, 'int32', 'b');
+    fwrite(fid, d3, 'int32', 'b');
+    fwrite(fid, d4, 'int32', 'b');
+    fwrite(fid, d5, 'int32', 'b');
+    fclose(fid);
+
+%     r = load_gating(gating_name);
+%     p = load_gating(new_file_name);
+%     figure
+%     hold on
+%     plot(p.time,p.ecg)
+%     plot(r.time,r.ecg)
+%     xlim([330 340])
+end
+
+%     if tick==13
+%         fileID = fopen('ppg_time_work','w');
+%         fprintf(fileID,'%d\n',ppg_time);
+%         fileID = fopen('ppg_trigger_work','w');
+%         fprintf(fileID,'%d\n',ppg_trigger);
+%         tick;
+%     end
+
+%     if tick == 17
+%         fileID = fopen('ppg_time_no_work','w');
+%         fprintf(fileID,'%d\n',ppg_time);
+%         fileID = fopen('ppg_trigger_no_work','w');
+%         fprintf(fileID,'%d\n',ppg_trigger);
+%         
+%         ppg_time_w = load('ppg_time_work');
+%         ppg_time_n_w = load('ppg_time_no_work');
+%         ppg_trigger_w = load('ppg_trigger_work');
+%         ppg_trigger_n_w = load('ppg_trigger_no_work');
+%         
+%         
+%         tick;
+%         ppgtt_w = ppg_time_w(ppg_trigger_w);
+%         ppgtt_n_w = ppg_time_n_w(ppg_trigger_n_w);  
+%     end

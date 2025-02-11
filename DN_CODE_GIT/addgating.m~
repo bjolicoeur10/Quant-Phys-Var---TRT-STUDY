@@ -1,0 +1,36 @@
+format long
+clearvars 
+baseDir = '/data/data_mrcv/45_DATA_HUMANS/HEAD_NECK/TEST_RETEST_PCVIPR';
+trtstudyvolDirs = dir(fullfile(baseDir, 'trtstudyvol*'));
+fileNames = cell(0);
+tick = 0;
+
+for trtstudyvolIdx = 1:numel(trtstudyvolDirs)
+    trtstudyvolDir = trtstudyvolDirs(trtstudyvolIdx);
+    trtstudyvolPath = fullfile(trtstudyvolDir.folder, trtstudyvolDir.name);
+
+    subsubdirs = dir(fullfile(trtstudyvolPath, '0*'));
+
+    for subsubdirIdx = 1:numel(subsubdirs)
+        subsubdir = subsubdirs(subsubdirIdx);
+
+        if subsubdir.isdir && ~strcmp(subsubdir.name, '.') && ~strcmp(subsubdir.name, '..')
+            subsubdirPath = fullfile(trtstudyvolPath, subsubdir.name, 'raw_data');
+            gating_name = dir(fullfile(subsubdirPath,'Gating_Track_*.pcvipr_track.full'));
+            gating_name = strcat(subsubdirPath,'/',gating_name.name);
+            ppg_trig_name = dir(fullfile(subsubdirPath, 'PPGTrig_pcvipr*'));
+            ppg_trig_name = ppg_trig_name(~endsWith({ppg_trig_name.name}, '.md5sum'));
+            ppg_trig_name = strcat(subsubdirPath,'/',ppg_trig_name.name);
+            ppg_name = dir(fullfile(subsubdirPath, 'PPGData_pcvipr*'));
+            ppg_name = ppg_name(~endsWith({ppg_name.name}, '.md5sum'));
+            ppg_name = strcat(subsubdirPath,'/',ppg_name.name);
+            new_file_name = strcat(subsubdirPath,'/BrocksGating.full');
+            tick = tick +1;
+            getgating(ppg_name, ppg_trig_name, gating_name, new_file_name,tick);
+            
+        end
+    end
+end
+
+
+
